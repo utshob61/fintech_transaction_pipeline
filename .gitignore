@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Env
+.env
+
+# Logs
+*.log
+logs/
+
+# Docker
+*.pid
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Data (keep sample, ignore generated/raw drops)
+data/incoming/
+data/processed/

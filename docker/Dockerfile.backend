@@ -1,0 +1,25 @@
+# ---- Backend (FastAPI + ETL) ----
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps for psycopg2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the parts of the project the backend actually needs
+COPY backend/ ./backend/
+COPY etl/ ./etl/
+COPY database/ ./database/
+
+ENV PYTHONPATH=/app/backend:/app
+WORKDIR /app/backend
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
