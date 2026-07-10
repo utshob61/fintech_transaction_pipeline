@@ -154,7 +154,7 @@ fintech_transaction_pipeline/
 
 ```bash
 # 1. Clone the repo and enter it
-git clone <your-repo-url>
+git clone <github.com/utshob61/fintech_transaction_pipeline>
 cd fintech_transaction_pipeline
 
 # 2. Copy environment variables
