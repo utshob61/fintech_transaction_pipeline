@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine as _create_engine, text
+from fastapi.responses import Response
 
 from app.database import Base, engine
 from app.logging_config import setup_logging
@@ -55,6 +56,15 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.get("/favicon.ico")
+@app.get("/favicon.png")
+async def favicon():
+    """Return an empty response for favicon requests to avoid unnecessary errors
+    in serverless environments where static files aren't present.
+    """
+    return Response(status_code=204)
 
 app.add_middleware(
     CORSMiddleware,
