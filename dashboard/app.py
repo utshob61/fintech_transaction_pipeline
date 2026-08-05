@@ -33,26 +33,54 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
         .kpi-card {
             background-color: #11161F;
             border: 1px solid #232A36;
             border-radius: 12px;
-            padding: 18px 20px;
+            padding: 1.05rem 1.1rem;
             text-align: left;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.25rem;
+            width: 100%;
+            min-height: 90px;
         }
         .kpi-label {
             color: #8A93A6;
-            font-size: 13px;
+            font-size: 0.72rem;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            margin-bottom: 6px;
+            margin-bottom: 0;
         }
         .kpi-value {
             color: #F4F6FB;
-            font-size: 28px;
+            font-size: 1.5rem;
             font-weight: 700;
+            line-height: 1.05;
+            word-break: break-word;
+            white-space: normal;
         }
-        .block-container { padding-top: 2rem; }
+        .block-container { padding-top: 1.25rem; }
+
+        /* Responsive tweaks */
+        @media (max-width: 900px) {
+            .kpi-card { padding: 0.9rem 1rem; }
+            .kpi-value { font-size: 1.2rem; }
+            .kpi-label { font-size: 0.65rem; }
+        }
+
+        @media (max-width: 640px) {
+            .kpi-card { padding: 0.75rem; }
+            .kpi-value { font-size: 1.05rem; }
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -98,7 +126,6 @@ if summary is None:
     )
     st.stop()
 
-kpi_cols = st.columns(5)
 kpis = [
     ("Total Transactions", f"{summary['total_transactions']:,}"),
     ("Total Revenue", format_currency(summary["total_revenue"])),
@@ -106,15 +133,20 @@ kpis = [
     ("Suspicious Transactions", f"{summary['suspicious_transaction_count']:,}"),
     ("Top Payment Method", summary["most_used_payment_method"] or "—"),
 ]
-for col, (label, value) in zip(kpi_cols, kpis):
-    with col:
-        st.markdown(
-            f"""<div class="kpi-card">
-                    <div class="kpi-label">{label}</div>
-                    <div class="kpi-value">{value}</div>
-                </div>""",
-            unsafe_allow_html=True,
-        )
+
+kpi_html = '<div class="kpi-grid">'
+for label, value in kpis:
+    kpi_html += (
+        f"""
+        <div class=\"kpi-card\">
+            <div class=\"kpi-label\">{label}</div>
+            <div class=\"kpi-value\">{value}</div>
+        </div>
+        """
+    )
+kpi_html += '</div>'
+
+st.markdown(kpi_html, unsafe_allow_html=True)
 
 st.write("")
 
@@ -129,7 +161,7 @@ with chart_col1:
     st.subheader("📈 Daily Revenue")
     if not daily_df.empty:
         fig = px.line(daily_df, x="day", y="total_revenue", markers=True)
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320)
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320, autosize=True)
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No data yet — upload a CSV to get started.")
@@ -138,7 +170,7 @@ with chart_col2:
     st.subheader("⚠️ Daily Failed Transactions")
     if not daily_df.empty:
         fig = px.bar(daily_df, x="day", y="failed_count")
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320)
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320, autosize=True)
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No data yet.")
@@ -154,7 +186,7 @@ with top_col:
     if top_users:
         tdf = pd.DataFrame(top_users)
         fig = px.bar(tdf, x="user_id", y="total_spent", text_auto=".2s")
-        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320)
+        fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320, autosize=True)
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No data yet.")

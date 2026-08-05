@@ -9,7 +9,6 @@ Run locally with:
 Swagger docs available at /docs, ReDoc at /redoc (both generated
 automatically by FastAPI from the Pydantic schemas + route definitions).
 """
-
 import logging
 from contextlib import asynccontextmanager
 
@@ -18,6 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
 from app.logging_config import setup_logging
+from app.models import *
+from app.schemas import *
 from app.routers import analytics, transactions, upload
 from database.init_db import init_database
 
