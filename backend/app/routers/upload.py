@@ -17,11 +17,12 @@ from sqlalchemy import create_engine
 
 from app.database import DATABASE_URL
 from app.schemas import IngestResponse, TransactionIn
-from etl.pipeline import run_pipeline_from_csv, run_pipeline_from_records
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["Ingestion"])
 
+
+# Create an engine lazily to avoid unnecessary work during serverless cold starts.
 engine = create_engine(DATABASE_URL)
 
 
@@ -35,6 +36,9 @@ async def upload_csv(file: UploadFile = File(...)):
         with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
             shutil.copyfileobj(file.file, tmp)
             tmp_path = tmp.name
+
+        # Import ETL pipeline lazily to keep the serverless function startup light.
+        from etl.pipeline import run_pipeline_from_csv
 
         report = run_pipeline_from_csv(tmp_path, engine)
         return report
@@ -57,6 +61,10 @@ async def upload_json(transactions: list[TransactionIn]):
 
     try:
         records = [t.model_dump() for t in transactions]
+
+        # Lazy import ETL pipeline function
+        from etl.pipeline import run_pipeline_from_records
+
         report = run_pipeline_from_records(records, engine)
         return report
     except Exception:
