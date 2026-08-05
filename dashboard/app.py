@@ -28,6 +28,19 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
+# Vercel Web Analytics Integration
+# ---------------------------------------------------------------------------
+st.markdown(
+    """
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="https://cdn.vercel-insights.com/v1/script.js"></script>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------------------
 # Minimal custom styling for a clean, modern fintech look
 # ---------------------------------------------------------------------------
 st.markdown(
