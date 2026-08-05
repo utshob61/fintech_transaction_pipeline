@@ -30,6 +30,7 @@ async def upload_csv(file: UploadFile = File(...)):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only .csv files are supported.")
 
+    tmp_path: str | None = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
             shutil.copyfileobj(file.file, tmp)
@@ -45,7 +46,8 @@ async def upload_csv(file: UploadFile = File(...)):
         logger.exception("CSV ingestion failed")
         raise HTTPException(status_code=500, detail="Failed to process the uploaded file.")
     finally:
-        Path(tmp_path).unlink(missing_ok=True)
+        if tmp_path:
+            Path(tmp_path).unlink(missing_ok=True)
 
 
 @router.post("/json", response_model=IngestResponse, summary="Ingest transactions as a JSON list")

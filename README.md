@@ -285,6 +285,18 @@ pytest tests/ -v
    - Set `DASHBOARD_API_URL` to the backend service's public URL.
 5. Add all variables from `.env.example` to each service's environment settings.
 
+### Vercel (Backend only)
+
+This repo includes a Vercel serverless deployment entrypoint at `api/index.py`.
+The FastAPI backend can be deployed to Vercel using Python serverless functions.
+
+1. Create a Vercel project from this repository.
+2. Set the environment variable `DATABASE_URL` in Vercel to your Postgres connection string.
+3. Set the build command to use the root `requirements.txt`.
+4. The deployed backend URL is the Vercel project URL.
+
+> Note: the Streamlit dashboard is not a standard Vercel app because it requires a persistent browser-facing Python process. Deploy the dashboard separately on Streamlit Community Cloud, Render, Railway, or another platform, and set its `DASHBOARD_API_URL` to the backend public URL.
+
 ### Docker Hub
 
 ```bash

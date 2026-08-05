@@ -4,11 +4,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import Base, engine
-from .logging_config import setup_logging
-from .models import *
-from .schemas import *
-from .routers import analytics, transactions, upload
+from app.database import Base, engine
+from app.logging_config import setup_logging
+from app.models import *
+from app.schemas import *
+from app.routers import analytics, transactions, upload
 
 # Import init_database from the root database package
 from database.init_db import init_database

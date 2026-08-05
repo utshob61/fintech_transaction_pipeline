@@ -76,12 +76,12 @@ def _handle_missing_values(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     before = len(df)
 
     critical_fields = ["transaction_id", "user_id", "merchant_id", "amount", "timestamp"]
-    df = df.dropna(subset=critical_fields)
+    df = df.dropna(subset=critical_fields).copy()
 
     # payment_method / transaction_status missing -> fill with explicit "UNKNOWN"
     # rather than dropping the whole transaction.
-    df["payment_method"] = df["payment_method"].fillna("UNKNOWN")
-    df["transaction_status"] = df["transaction_status"].fillna("UNKNOWN")
+    df.loc[:, "payment_method"] = df["payment_method"].fillna("UNKNOWN")
+    df.loc[:, "transaction_status"] = df["transaction_status"].fillna("UNKNOWN")
 
     dropped = before - len(df)
     if dropped:
