@@ -1,0 +1,6 @@
+# Dashboard-only dependencies (deploy dashboard separately)
+streamlit==1.36.0
+plotly==5.22.0
+pydeck==0.8.0
+uvloop==0.17.0
+pillow==9.0.0
