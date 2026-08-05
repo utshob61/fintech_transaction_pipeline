@@ -28,6 +28,21 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
+# Vercel Web Analytics Integration
+# ---------------------------------------------------------------------------
+# Inject Vercel Web Analytics script for tracking page views
+# This follows the plain HTML integration method from Vercel's documentation
+st.markdown(
+    """
+    <script>
+      window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------------------
 # Minimal custom styling for a clean, modern fintech look
 # ---------------------------------------------------------------------------
 st.markdown(
