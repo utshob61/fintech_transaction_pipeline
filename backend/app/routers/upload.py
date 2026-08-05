@@ -13,12 +13,28 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from sqlalchemy import text
 
 from app.database import engine
 from app.schemas import IngestResponse, TransactionIn
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["Ingestion"])
+
+
+@router.delete("/clear", summary="Clear all data from the database")
+async def clear_database():
+    """Wipes all transactions, users, and merchants. Useful for demo resets."""
+    try:
+        with engine.begin() as conn:
+            # Order matters due to foreign keys
+            conn.execute(text("DELETE FROM transactions"))
+            conn.execute(text("DELETE FROM merchants"))
+            conn.execute(text("DELETE FROM users"))
+        return {"status": "success", "message": "Database cleared."}
+    except Exception as e:
+        logger.exception("Failed to clear database")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/csv", response_model=IngestResponse, summary="Upload a transactions CSV file")

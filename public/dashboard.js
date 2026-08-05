@@ -1,5 +1,5 @@
 /**
- * Fintech Analytics 2.0 - Dashboard Core
+ * Fintech Analytics Dashboard Core - Unified functional update
  */
 
 const apiBase = '/api';
@@ -9,35 +9,36 @@ const uploadResult = document.getElementById('upload-result');
 const uploadOverlay = document.getElementById('upload-overlay');
 const overlayTitle = document.getElementById('overlay-title');
 
-// Shared Plotly Layout Constants
-const PLOTLY_DARK_LAYOUT = {
-  margin: { l: 40, r: 20, t: 20, b: 40 },
+// Shared Plotly Layout
+const PLOTLY_LAYOUT = {
+  margin: { l: 40, r: 20, t: 30, b: 40 },
   paper_bgcolor: 'rgba(0,0,0,0)',
   plot_bgcolor: 'rgba(0,0,0,0)',
   font: { color: '#94a3b8', family: 'Inter, sans-serif' },
   xaxis: {
     fixedrange: true,
-    gridcolor: '#1e293b',
-    zerolinecolor: '#1e293b',
-    tickfont: { size: 10 }
+    gridcolor: 'rgba(255,255,255,0.03)',
+    zerolinecolor: 'rgba(255,255,255,0.03)',
+    tickfont: { size: 9 }
   },
   yaxis: {
     fixedrange: true,
-    gridcolor: '#1e293b',
-    zerolinecolor: '#1e293b',
-    tickfont: { size: 10 }
+    gridcolor: 'rgba(255,255,255,0.03)',
+    zerolinecolor: 'rgba(255,255,255,0.03)',
+    tickfont: { size: 9 }
   },
   showlegend: false
 };
 
 function setStatus(message, type = 'error') {
-  const colorClass = type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400';
+  const color = type === 'success' ? 'bg-emerald-500' : 'bg-rose-500';
   statusContainer.innerHTML = `
-    <div class="mb-6 p-4 rounded-2xl border ${colorClass} flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-      <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-      <span class="text-sm font-medium">${message}</span>
+    <div class="px-6 py-3 rounded-xl shadow-2xl ${color} text-white font-bold text-sm flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <span>${type === 'success' ? '✓' : '⚠️'}</span>
+      ${message}
     </div>
   `;
+  if (type === 'success') setTimeout(clearStatus, 4000);
 }
 
 function clearStatus() {
@@ -55,14 +56,26 @@ function showOverlay(title, content) {
 }
 
 function formatCurrency(value) {
-  return '৳' + value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return '৳' + (value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-async function fetchJson(path) {
-  const response = await fetch(`${apiBase}${path}`);
+async function fetchJson(path, params = {}) {
+  const url = new URL(`${window.location.origin}${apiBase}${path}`);
+
+  // Add filters
+  Object.keys(params).forEach(key => {
+    if (params[key] && params[key] !== 'All') {
+        url.searchParams.append(key, params[key]);
+    }
+  });
+
+  // Cache buster
+  url.searchParams.append('_t', Date.now());
+
+  const response = await fetch(url);
   if (!response.ok) {
     const payload = await response.text();
-    throw new Error(`${response.status} ${response.statusText}: ${payload}`);
+    throw new Error(`${response.status}: ${payload}`);
   }
   return response.json();
 }
@@ -70,22 +83,19 @@ async function fetchJson(path) {
 function renderSummary(summary) {
   summaryGrid.innerHTML = '';
   const cards = [
-    { label: 'Total Volume', value: summary.total_transactions.toLocaleString(), icon: '📊' },
-    { label: 'Gross Revenue', value: formatCurrency(summary.total_revenue), icon: '💰', color: 'text-brand-500' },
-    { label: 'Failed Ops', value: summary.failed_transaction_count.toLocaleString(), icon: '⚠️', color: 'text-rose-400' },
-    { label: 'Fraud Flags', value: summary.suspicious_transaction_count.toLocaleString(), icon: '🚨', color: 'text-amber-400' },
-    { label: 'Primary Channel', value: summary.most_used_payment_method || '—', icon: '💳' },
+    { label: 'Total Transactions', value: summary.total_transactions.toLocaleString() },
+    { label: 'Total Revenue', value: formatCurrency(summary.total_revenue) },
+    { label: 'Failed Transactions', value: summary.failed_transaction_count.toLocaleString() },
+    { label: 'Suspicious Transactions', value: summary.suspicious_transaction_count.toLocaleString() },
+    { label: 'Top Payment Method', value: summary.most_used_payment_method || '—' },
   ];
 
   cards.forEach((c) => {
     const card = document.createElement('div');
     card.className = 'kpi-card';
     card.innerHTML = `
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${c.label}</span>
-        <span class="text-lg">${c.icon}</span>
-      </div>
-      <div class="text-2xl font-extrabold ${c.color || 'text-white'} truncate">${c.value}</div>
+      <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${c.label}</div>
+      <div class="text-2xl font-bold truncate">${c.value}</div>
     `;
     summaryGrid.appendChild(card);
   });
@@ -95,198 +105,132 @@ function renderRevenueChart(summary) {
   const days = summary.daily_summary.map((row) => row.day).reverse();
   const revenue = summary.daily_summary.map((row) => row.total_revenue).reverse();
 
-  Plotly.newPlot('revenue-chart', [
-    {
-      x: days,
-      y: revenue,
-      type: 'scatter',
-      mode: 'lines+markers',
-      marker: { color: '#0ea5e9', size: 6 },
-      line: { shape: 'spline', smoothing: 1.2, width: 3, color: '#0ea5e9' },
-      fill: 'tozeroy',
-      fillcolor: 'rgba(14, 165, 233, 0.05)'
-    },
-  ], PLOTLY_DARK_LAYOUT, { responsive: true, displayModeBar: false });
+  Plotly.newPlot('revenue-chart', [{
+      x: days, y: revenue, type: 'scatter', mode: 'lines+markers',
+      marker: { color: '#38bdf8', size: 4 },
+      line: { shape: 'spline', smoothing: 1.2, width: 2, color: '#38bdf8' },
+  }], PLOTLY_LAYOUT, { responsive: true, displayModeBar: false });
 }
 
 function renderFailedChart(summary) {
   const days = summary.daily_summary.map((row) => row.day).reverse();
   const failed = summary.daily_summary.map((row) => row.failed_count).reverse();
 
-  Plotly.newPlot('failed-chart', [
-    {
-      x: days,
-      y: failed,
-      type: 'bar',
-      marker: {
-        color: '#f43f5e',
-        line: { color: '#f43f5e', width: 0 }
-      },
-    },
-  ], PLOTLY_DARK_LAYOUT, { responsive: true, displayModeBar: false });
+  Plotly.newPlot('failed-chart', [{
+      x: days, y: failed, type: 'bar', marker: { color: '#38bdf8' },
+  }], PLOTLY_LAYOUT, { responsive: true, displayModeBar: false });
 }
 
 function renderTopUsers(users) {
   const container = document.getElementById('top-users-chart');
-  if (!users.length) {
-    container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500 text-sm italic">No data available</div>';
+  if (!users || !users.length) {
+    container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500 text-xs italic">No user data for the selected filters</div>';
     return;
   }
 
   const labels = users.map((row) => row.user_id);
   const values = users.map((row) => row.total_spent);
 
-  Plotly.newPlot('top-users-chart', [
-    {
-      x: values,
-      y: labels,
-      type: 'bar',
-      orientation: 'h',
-      marker: {
-        color: '#6366f1',
-        line: { color: '#6366f1', width: 0 }
-      },
-    },
-  ], {
-    ...PLOTLY_DARK_LAYOUT,
-    margin: { l: 80, r: 20, t: 10, b: 40 },
+  Plotly.newPlot('top-users-chart', [{
+      x: labels, y: values, type: 'bar',
+      marker: { color: '#38bdf8', opacity: 0.8 },
+      text: values.map(v => v > 0 ? '৳' + (v/1000).toFixed(1) + 'k' : ''),
+      textposition: 'outside',
+      cliponaxis: false
+  }], {
+    ...PLOTLY_LAYOUT,
+    margin: { l: 40, r: 20, t: 30, b: 40 },
+    yaxis: { ...PLOTLY_LAYOUT.yaxis, tickprefix: '৳' }
   }, { responsive: true, displayModeBar: false });
 }
 
 function renderMerchantPerformance(list) {
   const container = document.getElementById('merchant-table');
-  if (!list.length) {
-    container.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm italic">No merchant data discovered</div>';
-    return;
-  }
+  if (!list.length) { container.innerHTML = '<div class="p-8 text-slate-500 text-xs italic">No data</div>'; return; }
 
   container.innerHTML = `
     <table class="w-full">
-      <thead>
-        <tr class="bg-slate-900/50">
-          <th class="table-header">Merchant ID</th>
+      <thead><tr>
+          <th class="table-header">Merchant</th>
           <th class="table-header text-right">Revenue</th>
-          <th class="table-header text-center">Txns</th>
-          <th class="table-header text-right">Success</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${list
-          .map(
-            (row) =>
-              `<tr>
-                <td class="table-cell font-medium text-slate-300">${row.merchant_id}</td>
-                <td class="table-cell text-right font-bold text-emerald-400">${formatCurrency(row.total_revenue)}</td>
-                <td class="table-cell text-center text-slate-400">${row.transaction_count}</td>
-                <td class="table-cell text-right">
-                  <div class="flex flex-col items-end gap-1">
-                    <span class="text-xs font-bold text-slate-200">${row.success_rate.toFixed(1)}%</span>
-                    <div class="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-brand-500" style="width: ${row.success_rate}%"></div>
-                    </div>
-                  </div>
-                </td>
-              </tr>`
-          )
-          .join('')}
+          <th class="table-header text-center">Transactions</th>
+          <th class="table-header text-center">Failed</th>
+          <th class="table-header text-right">Success Rate (%)</th>
+      </tr></thead>
+      <tbody>${list.map((row) => `
+        <tr>
+          <td class="table-cell font-bold">${row.merchant_id}</td>
+          <td class="table-cell text-right">${formatCurrency(row.total_revenue)}</td>
+          <td class="table-cell text-center">${row.transaction_count}</td>
+          <td class="table-cell text-center">${row.failed_count}</td>
+          <td class="table-cell text-right">${row.success_rate.toFixed(2)}</td>
+        </tr>`).join('')}
       </tbody>
-    </table>
-  `;
+    </table>`;
 }
 
 function renderChannelPerformance(list) {
   const container = document.getElementById('channel-table');
-  if (!list.length) {
-    container.innerHTML = '<div class="p-8 text-center text-slate-500 text-sm italic">No channel data discovered</div>';
-    return;
-  }
+  if (!list.length) { container.innerHTML = '<div class="p-8 text-slate-500 text-xs italic">No data</div>'; return; }
 
   container.innerHTML = `
     <table class="w-full">
-      <thead>
-        <tr class="bg-slate-900/50">
+      <thead><tr>
           <th class="table-header">Channel</th>
           <th class="table-header text-right">Revenue</th>
-          <th class="table-header text-center">Txns</th>
-          <th class="table-header text-right">Success</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${list
-          .map(
-            (row) =>
-              `<tr>
-                <td class="table-cell font-medium text-slate-300">${row.payment_method}</td>
-                <td class="table-cell text-right font-bold text-brand-500">${formatCurrency(row.total_revenue)}</td>
-                <td class="table-cell text-center text-slate-400">${row.transaction_count}</td>
-                <td class="table-cell text-right">
-                  <div class="flex flex-col items-end gap-1">
-                    <span class="text-xs font-bold text-slate-200">${row.success_rate.toFixed(1)}%</span>
-                    <div class="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-indigo-500" style="width: ${row.success_rate}%"></div>
-                    </div>
-                  </div>
-                </td>
-              </tr>`
-          )
-          .join('')}
+          <th class="table-header text-center">Transactions</th>
+          <th class="table-header text-center">Failed</th>
+          <th class="table-header text-right">Success Rate (%)</th>
+      </tr></thead>
+      <tbody>${list.map((row) => `
+        <tr>
+          <td class="table-cell font-bold">${row.payment_method}</td>
+          <td class="table-cell text-right">${formatCurrency(row.total_revenue)}</td>
+          <td class="table-cell text-center">${row.transaction_count}</td>
+          <td class="table-cell text-center">${row.failed_count}</td>
+          <td class="table-cell text-right">${row.success_rate.toFixed(2)}</td>
+        </tr>`).join('')}
       </tbody>
-    </table>
-  `;
+    </table>`;
 }
 
 function renderSuspicious(list) {
   const container = document.getElementById('suspicious-table');
-  if (!list.length) {
-    container.innerHTML = '<div class="p-12 text-center"><div class="text-4xl mb-4">🛡️</div><div class="text-slate-500 text-sm font-medium">No suspicious activity detected in the current audit period</div></div>';
-    return;
-  }
+  if (!list.length) { container.innerHTML = '<div class="p-8 text-slate-500 text-xs italic text-center">🛡️ No suspicious activity detected</div>'; return; }
 
   container.innerHTML = `
     <table class="w-full">
-      <thead class="bg-slate-900/50">
+      <thead><tr>
+          <th class="table-header">ID</th><th class="table-header">Actor</th><th class="table-header">Merchant</th>
+          <th class="table-header text-right">Amount</th><th class="table-header">Status</th>
+          <th class="table-header">Reason</th><th class="table-header">Timestamp</th>
+      </tr></thead>
+      <tbody>${list.slice(0, 50).map((row) => `
         <tr>
-          <th class="table-header">Txn ID</th>
-          <th class="table-header">Actor</th>
-          <th class="table-header">Merchant</th>
-          <th class="table-header text-right">Amount</th>
-          <th class="table-header text-center">Status</th>
-          <th class="table-header">Violation Reason</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${list
-          .slice(0, 15)
-          .map((row) => {
-            const statusClass = row.transaction_status === 'FAILED' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400';
-            return `
-              <tr class="hover:bg-slate-800/30 transition-colors">
-                <td class="table-cell font-mono text-xs text-brand-500">${row.transaction_id}</td>
-                <td class="table-cell font-medium">${row.user_id}</td>
-                <td class="table-cell text-slate-400">${row.merchant_id}</td>
-                <td class="table-cell text-right font-bold">${formatCurrency(row.amount)}</td>
-                <td class="table-cell text-center">
-                  <span class="status-pill ${statusClass}">${row.transaction_status}</span>
-                </td>
-                <td class="table-cell text-xs text-amber-400/80 leading-relaxed max-w-xs">${row.suspicious_reason || 'Manual Flag'}</td>
-              </tr>
-            `;
-          })
-          .join('')}
+          <td class="table-cell font-mono">${row.transaction_id}</td>
+          <td class="table-cell">${row.user_id}</td>
+          <td class="table-cell">${row.merchant_id}</td>
+          <td class="table-cell text-right font-bold">${row.amount.toLocaleString()}</td>
+          <td class="table-cell">${row.transaction_status}</td>
+          <td class="table-cell text-amber-500 text-[10px]">${row.suspicious_reason || 'Manual'}</td>
+          <td class="table-cell text-slate-500 text-[10px]">${row.timestamp.replace('T', ' ').split('.')[0]}</td>
+        </tr>`).join('')}
       </tbody>
-    </table>
-  `;
+    </table>`;
 }
 
 async function loadDashboard() {
   try {
-    clearStatus();
+    const payment = document.getElementById('filter-payment').value;
+    const status = document.getElementById('filter-status').value;
+    const params = { payment_method: payment, transaction_status: status };
+
     const [summary, topUsers, merchants, channels, suspicious] = await Promise.all([
-      fetchJson('/analytics/summary'),
-      fetchJson('/analytics/top-users?limit=10'),
-      fetchJson('/analytics/merchant-performance'),
-      fetchJson('/analytics/channel-performance'),
-      fetchJson('/transactions/suspicious?limit=50'),
+      fetchJson('/analytics/summary', params),
+      fetchJson('/analytics/top-users?limit=10', params),
+      fetchJson('/analytics/merchant-performance', params),
+      fetchJson('/analytics/channel-performance', params),
+      fetchJson('/transactions/suspicious?limit=50', params),
     ]);
 
     renderSummary(summary);
@@ -297,58 +241,81 @@ async function loadDashboard() {
     renderChannelPerformance(channels);
     renderSuspicious(suspicious);
   } catch (error) {
-    setStatus(`Dashboard Sync Error: ${error.message}`);
+    setStatus(`Sync Error: ${error.message}`);
   }
 }
 
-async function uploadCsv(file) {
-  const form = new FormData();
-  form.append('file', file, file.name);
-
-  const response = await fetch(`${apiBase}/upload/csv`, {
-    method: 'POST',
-    body: form,
-  });
-
-  if (!response.ok) {
-    const payload = await response.json();
-    throw new Error(payload.detail || `${response.status} ${response.statusText}`);
-  }
-
-  return response.json();
-}
-
+// Upload & Clear Logic
 const uploadForm = document.getElementById('upload-form');
-uploadForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  clearStatus();
+const fileInput = document.getElementById('transaction-file');
+const dropzone = document.getElementById('dropzone');
+const clearBtn = document.getElementById('clear-db-btn');
+const resetSampleBtn = document.getElementById('reset-sample-btn');
 
-  const fileInput = document.getElementById('transaction-file');
-  if (!fileInput.files.length) {
-    setStatus('Please select a CSV file for ingestion.');
-    return;
-  }
+clearBtn.addEventListener('click', async () => {
+  if (!confirm('Clear all data from this instance?')) return;
+  try {
+    const res = await fetch(`${apiBase}/upload/clear`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Clear failed');
+    setStatus('Database wiped.', 'success');
+    await loadDashboard();
+  } catch (e) { setStatus(e.message); }
+});
+
+resetSampleBtn.addEventListener('click', async () => {
+  setStatus('Resetting to sample data...', 'success');
+  try {
+    // We can't trigger the backend seed directly easily without a specific endpoint,
+    // so we'll just clear and then let the user know they can upload the sample.
+    // Actually, let's just make it clear the db.
+    await fetch(`${apiBase}/upload/clear`, { method: 'DELETE' });
+    setStatus('Database cleared. Please upload your CSV now.', 'success');
+    await loadDashboard();
+  } catch (e) { setStatus(e.message); }
+});
+
+fileInput.addEventListener('change', () => { if (fileInput.files.length) uploadForm.requestSubmit(); });
+
+uploadForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!fileInput.files.length) return;
 
   const file = fileInput.files[0];
-  const submitBtn = event.target.querySelector('button');
-  const originalBtnText = submitBtn.textContent;
+  const formData = new FormData();
+  formData.append('file', file);
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Processing...';
-
+  setStatus(`Processing ${file.name}...`, 'success');
   try {
-    const result = await uploadCsv(file);
-    showOverlay('Ingestion Successful', JSON.stringify(result, null, 2));
-    setStatus('Pipeline execution completed successfully.', 'success');
-    await loadDashboard();
-  } catch (error) {
-    showOverlay('Ingestion Failed', error.message);
-    setStatus(`Pipeline Error: ${error.message}`);
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = originalBtnText;
-    fileInput.value = '';
-  }
+    const res = await fetch(`${apiBase}/upload/csv`, { method: 'POST', body: formData });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.detail || 'Upload failed');
+
+    showOverlay('Ingestion Report', JSON.stringify(result, null, 2));
+    if (result.transactions_inserted > 0) {
+        setStatus(`Success: Added ${result.transactions_inserted} rows.`, 'success');
+        loadDashboard();
+    } else {
+        setStatus('No new data added (IDs already exist).', 'error');
+    }
+  } catch (e) { setStatus(e.message); } finally { fileInput.value = ''; }
 });
+
+// Drag/Drop
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('border-accent'); });
+dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('border-accent'); });
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('border-accent');
+  if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; uploadForm.requestSubmit(); }
+});
+
+// Mobile
+document.getElementById('mobile-sidebar-toggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('hidden');
+});
+
+// Filter triggers
+document.getElementById('filter-payment').addEventListener('change', loadDashboard);
+document.getElementById('filter-status').addEventListener('change', loadDashboard);
 
 window.addEventListener('load', loadDashboard);

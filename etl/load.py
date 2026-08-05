@@ -52,7 +52,11 @@ def _upsert_users(conn, df: pd.DataFrame) -> int:
         ON CONFLICT (user_id) DO NOTHING
         """
     )
-    conn.execute(stmt, [{"user_id": uid} for uid in user_ids])
+    
+    batch_size = 5000
+    for i in range(0, len(user_ids), batch_size):
+        conn.execute(stmt, [{"user_id": uid} for uid in user_ids[i:i+batch_size]])
+        
     return len(user_ids)
 
 
@@ -68,7 +72,11 @@ def _upsert_merchants(conn, df: pd.DataFrame) -> int:
         ON CONFLICT (merchant_id) DO NOTHING
         """
     )
-    conn.execute(stmt, [{"merchant_id": mid} for mid in merchant_ids])
+    
+    batch_size = 5000
+    for i in range(0, len(merchant_ids), batch_size):
+        conn.execute(stmt, [{"merchant_id": mid} for mid in merchant_ids[i:i+batch_size]])
+
     return len(merchant_ids)
 
 
@@ -76,17 +84,17 @@ def _insert_transactions(conn, df: pd.DataFrame) -> dict:
     if df.empty:
         return {"transactions_inserted": 0, "transactions_skipped_existing": 0}
 
-    # Count existing rows among this batch's IDs so we can report how many
-    # were skipped as already-loaded (idempotent re-runs).
     incoming_ids = df["transaction_id"].tolist()
     
-    # Use a dialect-agnostic approach for the IN clause.
-    # bindparam(..., expanding=True) works for both PostgreSQL and SQLite.
-    stmt = text("SELECT transaction_id FROM transactions WHERE transaction_id IN :ids")
-    stmt = stmt.bindparams(bindparam("ids", expanding=True))
-    
-    existing_result = conn.execute(stmt, {"ids": incoming_ids})
-    existing_ids = {row[0] for row in existing_result}
+    # Batch the existence check to handle large datasets
+    existing_ids = set()
+    batch_size = 5000
+    for i in range(0, len(incoming_ids), batch_size):
+        batch_ids = incoming_ids[i:i + batch_size]
+        stmt = text("SELECT transaction_id FROM transactions WHERE transaction_id IN :ids")
+        stmt = stmt.bindparams(bindparam("ids", expanding=True))
+        result = conn.execute(stmt, {"ids": batch_ids})
+        existing_ids.update(row[0] for row in result)
 
     stmt = text(
         """
@@ -103,27 +111,39 @@ def _insert_transactions(conn, df: pd.DataFrame) -> dict:
         """
     )
 
-    # Use a list of dicts to avoid any pandas-to-sqlalchemy type conversion issues
-    # especially with SQLite which is sensitive to Timestamp types.
-    records = [
-        {
-            "transaction_id": r.transaction_id,
-            "user_id": r.user_id,
-            "merchant_id": r.merchant_id,
-            "amount": float(r.amount),
-            "payment_method": r.payment_method,
-            "transaction_status": r.transaction_status,
-            "is_suspicious": bool(r.is_suspicious),
-            "suspicious_reason": r.suspicious_reason,
-            "timestamp": r.timestamp.to_pydatetime() if hasattr(r.timestamp, "to_pydatetime") else r.timestamp,
-        }
-        for r in df.itertuples()
-    ]
+    # Use vectorized conversion for faster performance on large datasets.
+    load_df = df.copy()
+    if hasattr(load_df["timestamp"], "dt"):
+        load_df["timestamp"] = load_df["timestamp"].dt.to_pydatetime()
+    else:
+        load_df["timestamp"] = [
+            t.to_pydatetime() if hasattr(t, "to_pydatetime") else t 
+            for t in load_df["timestamp"]
+        ]
+    
+    load_df["amount"] = load_df["amount"].astype(float)
+    load_df["is_suspicious"] = load_df["is_suspicious"].astype(bool)
 
-    conn.execute(stmt, records)
+    all_records = load_df[
+        [
+            "transaction_id",
+            "user_id",
+            "merchant_id",
+            "amount",
+            "payment_method",
+            "transaction_status",
+            "is_suspicious",
+            "suspicious_reason",
+            "timestamp",
+        ]
+    ].to_dict(orient="records")
+
+    # Batch the inserts
+    for i in range(0, len(all_records), batch_size):
+        conn.execute(stmt, all_records[i:i + batch_size])
 
     inserted = len(incoming_ids) - len(existing_ids)
     return {
-        "transactions_inserted": inserted,
+        "transactions_inserted": max(0, inserted),
         "transactions_skipped_existing": len(existing_ids),
     }

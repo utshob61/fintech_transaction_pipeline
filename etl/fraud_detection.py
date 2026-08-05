@@ -78,25 +78,30 @@ def _flag_repeat_failures(df: pd.DataFrame) -> None:
 def _flag_duplicate_attempts(df: pd.DataFrame) -> None:
     """Rule 3: same user + merchant + amount repeated within a short window
     (classic accidental double-submit or deliberate retry/duplicate-charge
-    pattern)."""
-    sorted_df = df.sort_values("timestamp")
-    window = pd.Timedelta(minutes=DUPLICATE_WINDOW_MINUTES)
+    pattern). Vectorized for performance on large datasets."""
+    
+    if df.empty:
+        return
 
-    suspicious_ids = set()
+    # 1. Sort by grouping columns and timestamp
     group_cols = ["user_id", "merchant_id", "amount"]
+    sorted_df = df.sort_values(group_cols + ["timestamp"])
+    
+    # 2. Calculate time difference between consecutive rows within groups
+    time_diff = sorted_df.groupby(group_cols)["timestamp"].diff()
+    window = pd.Timedelta(minutes=DUPLICATE_WINDOW_MINUTES)
+    
+    # 3. Create masks: 
+    # mask_b flags the current row if it's too close to the PREVIOUS row
+    mask_b = time_diff <= window
+    # mask_a flags the current row if it's too close to the NEXT row (by shifting back)
+    mask_a = mask_b.shift(-1).fillna(False)
+    
+    # 4. Map the mask back to the original index
+    final_mask_sorted = mask_a | mask_b
+    mask_original = final_mask_sorted.reindex(df.index).fillna(False)
 
-    for _, group in sorted_df.groupby(group_cols):
-        if len(group) < 2:
-            continue
-        timestamps = group["timestamp"].tolist()
-        ids = group["transaction_id"].tolist()
-        for i in range(1, len(timestamps)):
-            if timestamps[i] - timestamps[i - 1] <= window:
-                suspicious_ids.add(ids[i - 1])
-                suspicious_ids.add(ids[i])
-
-    if suspicious_ids:
-        mask = df["transaction_id"].isin(suspicious_ids)
+    if mask_original.any():
         _append_reason(
-            df, mask, f"Duplicate attempt within {DUPLICATE_WINDOW_MINUTES} min window"
+            df, mask_original, f"Duplicate attempt within {DUPLICATE_WINDOW_MINUTES} min window"
         )
