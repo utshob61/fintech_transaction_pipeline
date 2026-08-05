@@ -1,8 +1,10 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import create_engine as _create_engine, text
 
 from app.database import Base, engine
 from app.logging_config import setup_logging
@@ -20,12 +22,26 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Fintech Transaction Analytics API...")
-    try:
-        init_database()  # CREATE TABLE IF NOT EXISTS
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database ready.")
-    except Exception:
-        logger.exception("Could not initialize database on startup.")
+
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        logger.warning("No DATABASE_URL set; skipping database initialization.")
+    else:
+        try:
+            # quick connectivity check (fast-fail in serverless environments)
+            test_engine = _create_engine(db_url, connect_args={"connect_timeout": 2})
+            with test_engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+
+            # apply schema and ensure metadata
+            init_database()  # CREATE TABLE IF NOT EXISTS
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database ready.")
+        except Exception:
+            logger.exception(
+                "Could not initialize database on startup; continuing without DB."
+            )
+
     yield
     logger.info("Shutting down Fintech Transaction Analytics API.")
 
