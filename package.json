@@ -1,0 +1,15 @@
+{
+  "name": "fintech-transaction-pipeline",
+  "version": "2.0.0",
+  "description": "Fintech Transaction Analytics Pipeline with Web Analytics",
+  "private": true,
+  "scripts": {
+    "build": "echo 'No build step required for static site'"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

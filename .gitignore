@@ -26,3 +26,6 @@ logs/
 data/incoming/
 data/processed/
 .vercel
+
+# Node.js
+node_modules/
