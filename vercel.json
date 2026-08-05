@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 2,
   "builds": [
     {
       "src": "api/index.py",
@@ -8,12 +8,28 @@
         "runtime": "python3.11",
         "installCommand": "pip install -r requirements.txt"
       }
+    },
+    {
+      "src": "public/**/*",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "^/$",
+      "dest": "/public/index.html"
+    },
+    {
+      "src": "^/dashboard.js$",
+      "dest": "/public/dashboard.js"
+    },
+    {
+      "src": "^/api/(.*)$",
       "dest": "/api/index.py"
+    },
+    {
+      "src": "^/(.*)$",
+      "dest": "/public/$1"
     }
   ]
 }

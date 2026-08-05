@@ -11,7 +11,13 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import AnalyticsSummary, DailySummary, MerchantPerformance, TopUser
+from app.schemas import (
+    AnalyticsSummary,
+    ChannelPerformance,
+    DailySummary,
+    MerchantPerformance,
+    TopUser,
+)
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 
@@ -37,7 +43,7 @@ def get_summary(db: Session = Depends(get_db)):
             SELECT payment_method
             FROM transactions
             GROUP BY payment_method
-            ORDER BY COUNT(*) DESC
+            ORDER BY COUNT(*) DESC, payment_method ASC
             LIMIT 1
             """
         )
@@ -121,7 +127,7 @@ def get_merchant_performance(db: Session = Depends(get_db)):
                 COUNT(*) FILTER (WHERE transaction_status = 'FAILED')                   AS failed_count
             FROM transactions
             GROUP BY merchant_id
-            ORDER BY total_revenue DESC
+            ORDER BY total_revenue DESC, merchant_id ASC
             """
         )
     ).mappings().all()
@@ -136,6 +142,46 @@ def get_merchant_performance(db: Session = Depends(get_db)):
         results.append(
             MerchantPerformance(
                 merchant_id=row["merchant_id"],
+                total_revenue=float(row["total_revenue"]),
+                transaction_count=row["transaction_count"],
+                failed_count=row["failed_count"],
+                success_rate=round(success_rate, 2),
+            )
+        )
+    return results
+
+
+@router.get(
+    "/channel-performance",
+    response_model=list[ChannelPerformance],
+    summary="Payment channel performance breakdown",
+)
+def get_channel_performance(db: Session = Depends(get_db)):
+    rows = db.execute(
+        text(
+            """
+            SELECT
+                payment_method,
+                COALESCE(SUM(amount) FILTER (WHERE transaction_status = 'SUCCESS'), 0) AS total_revenue,
+                COUNT(*)                                                                AS transaction_count,
+                COUNT(*) FILTER (WHERE transaction_status = 'FAILED')                   AS failed_count
+            FROM transactions
+            GROUP BY payment_method
+            ORDER BY total_revenue DESC, payment_method ASC
+            """
+        )
+    ).mappings().all()
+
+    results = []
+    for row in rows:
+        success_rate = (
+            (row["transaction_count"] - row["failed_count"]) / row["transaction_count"] * 100
+            if row["transaction_count"]
+            else 0
+        )
+        results.append(
+            ChannelPerformance(
+                payment_method=row["payment_method"],
                 total_revenue=float(row["total_revenue"]),
                 transaction_count=row["transaction_count"],
                 failed_count=row["failed_count"],

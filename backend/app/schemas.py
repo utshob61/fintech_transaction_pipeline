@@ -85,3 +85,11 @@ class MerchantPerformance(BaseModel):
     transaction_count: int
     failed_count: int
     success_rate: float
+
+
+class ChannelPerformance(BaseModel):
+    payment_method: str
+    total_revenue: float
+    transaction_count: int
+    failed_count: int
+    success_rate: float

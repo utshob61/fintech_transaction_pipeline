@@ -13,17 +13,12 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from sqlalchemy import create_engine
 
-from app.database import DATABASE_URL
+from app.database import engine
 from app.schemas import IngestResponse, TransactionIn
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["Ingestion"])
-
-
-# Create an engine lazily to avoid unnecessary work during serverless cold starts.
-engine = create_engine(DATABASE_URL)
 
 
 @router.post("/csv", response_model=IngestResponse, summary="Upload a transactions CSV file")

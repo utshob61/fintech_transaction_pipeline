@@ -25,3 +25,4 @@ logs/
 # Data (keep sample, ignore generated/raw drops)
 data/incoming/
 data/processed/
+.vercel

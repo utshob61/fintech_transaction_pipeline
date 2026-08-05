@@ -16,7 +16,7 @@ Design notes:
 import logging
 
 import pandas as pd
-from sqlalchemy import text
+from sqlalchemy import text, bindparam
 from sqlalchemy.engine import Engine
 
 logger = logging.getLogger(__name__)
@@ -79,10 +79,13 @@ def _insert_transactions(conn, df: pd.DataFrame) -> dict:
     # Count existing rows among this batch's IDs so we can report how many
     # were skipped as already-loaded (idempotent re-runs).
     incoming_ids = df["transaction_id"].tolist()
-    existing_result = conn.execute(
-        text("SELECT transaction_id FROM transactions WHERE transaction_id = ANY(:ids)"),
-        {"ids": incoming_ids},
-    )
+    
+    # Use a dialect-agnostic approach for the IN clause.
+    # bindparam(..., expanding=True) works for both PostgreSQL and SQLite.
+    stmt = text("SELECT transaction_id FROM transactions WHERE transaction_id IN :ids")
+    stmt = stmt.bindparams(bindparam("ids", expanding=True))
+    
+    existing_result = conn.execute(stmt, {"ids": incoming_ids})
     existing_ids = {row[0] for row in existing_result}
 
     stmt = text(
@@ -100,19 +103,22 @@ def _insert_transactions(conn, df: pd.DataFrame) -> dict:
         """
     )
 
-    records = df[
-        [
-            "transaction_id",
-            "user_id",
-            "merchant_id",
-            "amount",
-            "payment_method",
-            "transaction_status",
-            "is_suspicious",
-            "suspicious_reason",
-            "timestamp",
-        ]
-    ].to_dict(orient="records")
+    # Use a list of dicts to avoid any pandas-to-sqlalchemy type conversion issues
+    # especially with SQLite which is sensitive to Timestamp types.
+    records = [
+        {
+            "transaction_id": r.transaction_id,
+            "user_id": r.user_id,
+            "merchant_id": r.merchant_id,
+            "amount": float(r.amount),
+            "payment_method": r.payment_method,
+            "transaction_status": r.transaction_status,
+            "is_suspicious": bool(r.is_suspicious),
+            "suspicious_reason": r.suspicious_reason,
+            "timestamp": r.timestamp.to_pydatetime() if hasattr(r.timestamp, "to_pydatetime") else r.timestamp,
+        }
+        for r in df.itertuples()
+    ]
 
     conn.execute(stmt, records)
 

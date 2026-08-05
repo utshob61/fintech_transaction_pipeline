@@ -11,7 +11,7 @@ clean and type-safe.
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, DateTime
+from sqlalchemy import Boolean, ForeignKey, Numeric, String, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -22,7 +22,7 @@ class User(Base):
 
     user_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     user_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="user")
 
@@ -33,7 +33,7 @@ class Merchant(Base):
     merchant_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     merchant_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="merchant")
 
@@ -50,7 +50,7 @@ class Transaction(Base):
     is_suspicious: Mapped[bool] = mapped_column(Boolean, default=False)
     suspicious_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="transactions")
     merchant: Mapped["Merchant"] = relationship(back_populates="transactions")
