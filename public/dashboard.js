@@ -8,6 +8,7 @@ const statusContainer = document.getElementById('status-container');
 const uploadResult = document.getElementById('upload-result');
 const uploadOverlay = document.getElementById('upload-overlay');
 const overlayTitle = document.getElementById('overlay-title');
+const loadingOverlay = document.getElementById('loading-overlay');
 
 // Shared Plotly Layout
 const PLOTLY_LAYOUT = {
@@ -285,9 +286,15 @@ uploadForm.addEventListener('submit', async (e) => {
   formData.append('file', file);
 
   setStatus(`Processing ${file.name}...`, 'success');
+  loadingOverlay.classList.remove('hidden');
+  loadingOverlay.classList.add('flex');
+
   try {
     const res = await fetch(`${apiBase}/upload/csv`, { method: 'POST', body: formData });
     const result = await res.json();
+    loadingOverlay.classList.add('hidden');
+    loadingOverlay.classList.remove('flex');
+
     if (!res.ok) throw new Error(result.detail || 'Upload failed');
 
     showOverlay('Ingestion Report', JSON.stringify(result, null, 2));
@@ -297,7 +304,11 @@ uploadForm.addEventListener('submit', async (e) => {
     } else {
         setStatus('No new data added (IDs already exist).', 'error');
     }
-  } catch (e) { setStatus(e.message); } finally { fileInput.value = ''; }
+  } catch (e) {
+    loadingOverlay.classList.add('hidden');
+    loadingOverlay.classList.remove('flex');
+    setStatus(e.message);
+  } finally { fileInput.value = ''; }
 });
 
 // Drag/Drop
@@ -309,13 +320,41 @@ dropzone.addEventListener('drop', (e) => {
   if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; uploadForm.requestSubmit(); }
 });
 
-// Mobile
-document.getElementById('mobile-sidebar-toggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('hidden');
+// Mobile Sidebar Toggle
+const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarClose = document.getElementById('sidebar-close');
+
+function openSidebar() {
+    sidebar.classList.remove('-translate-x-full');
+    mobileToggle.classList.add('hidden');
+}
+
+function closeSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    mobileToggle.classList.remove('hidden');
+}
+
+mobileToggle.addEventListener('click', openSidebar);
+sidebarClose.addEventListener('click', closeSidebar);
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', (e) => {
+    if (window.innerWidth < 1024) {
+        if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target) && !sidebar.classList.contains('-translate-x-full')) {
+            closeSidebar();
+        }
+    }
 });
 
 // Filter triggers
-document.getElementById('filter-payment').addEventListener('change', loadDashboard);
-document.getElementById('filter-status').addEventListener('change', loadDashboard);
+document.getElementById('filter-payment').addEventListener('change', () => {
+    loadDashboard();
+    if (window.innerWidth < 1024) closeSidebar();
+});
+document.getElementById('filter-status').addEventListener('change', () => {
+    loadDashboard();
+    if (window.innerWidth < 1024) closeSidebar();
+});
 
 window.addEventListener('load', loadDashboard);

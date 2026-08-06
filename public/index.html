@@ -41,10 +41,10 @@
     }
     @layer components {
       .sidebar {
-        @apply w-72 bg-sidebar border-r border-white/5 h-screen fixed left-0 top-0 overflow-y-auto z-40 hidden lg:block;
+        @apply w-72 bg-sidebar border-r border-white/5 h-screen fixed left-0 top-0 overflow-y-auto z-40 transition-transform duration-300;
       }
       .main-content {
-        @apply lg:ml-72 p-8 min-h-screen;
+        @apply lg:ml-72 p-8 min-h-screen transition-opacity duration-300;
       }
       .section-title {
         @apply text-xl font-bold mb-6 flex items-center gap-2;
@@ -70,6 +70,18 @@
       .dropzone {
         @apply border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:border-accent/50 transition-colors cursor-pointer bg-white/[0.02];
       }
+      .spinner {
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top: 3px solid #38bdf8;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
     }
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -84,7 +96,10 @@
   </div>
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="sidebar">
+  <aside id="sidebar" class="sidebar -translate-x-full lg:translate-x-0">
+    <div class="lg:hidden absolute top-4 right-4 text-slate-500 hover:text-white cursor-pointer" id="sidebar-close">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </div>
     <div class="sidebar-item">
       <div class="flex items-center gap-2 mb-4">
         <span class="text-xl">📁</span>
@@ -221,5 +236,25 @@
   </div>
 
   <div id="status-container" class="fixed bottom-6 right-6 z-50"></div>
+
+  <!-- Loading Animation Overlay -->
+  <div id="loading-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] hidden flex flex-col items-center justify-center gap-6">
+    <div class="spinner"></div>
+    <div class="flex flex-col items-center gap-2">
+      <div class="text-white font-black tracking-[0.2em] text-sm uppercase animate-pulse">Running ETL Pipeline</div>
+      <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Cleaning • Fraud Flagging • Ingesting</p>
+    </div>
+    <div class="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+      <div class="h-full bg-accent animate-[loading_2s_ease-in-out_infinite]"></div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes loading {
+      0% { width: 0%; transform: translateX(-100%); }
+      50% { width: 100%; transform: translateX(0%); }
+      100% { width: 0%; transform: translateX(100%); }
+    }
+  </style>
 </body>
 </html>
