@@ -1,152 +1,152 @@
-# 💳 Fintech Transaction Analytics Pipeline 2.0
+# 💳 Fintech Transaction Pipeline v2.0
 
-A high-performance transaction monitoring & analytics system, modeled on industrial-scale pipelines used by mobile financial services like **bKash** and **Nagad**. Built to demonstrate robust data engineering: high-speed ingestion, vectorized ETL, rule-based fraud detection, and a modern analytics dashboard.
+A high-performance transaction monitoring & analytics system, modeled on industrial-scale pipelines used by mobile financial services (MFS) like **bKash** and **Nagad**. Designed for extreme speed, vectorized data processing, and real-time fraud flagging.
 
 > **Live Demo:** [https://fintechtransactionpipeline.vercel.app](https://fintechtransactionpipeline.vercel.app)
+> **API Docs:** [https://fintechtransactionpipeline.vercel.app/docs](https://fintechtransactionpipeline.vercel.app/docs)
+> **GitHub Repo:** [https://github.com/utshob61/fintech_transaction_pipeline](https://github.com/utshob61/fintech_transaction_pipeline)
 
 ---
 
-## 🌟 What's New in 2.0
-
-- **Mobile-First Responsive UI:** A complete redesign using **Tailwind CSS** with a persistent sidebar, glassmorphism effects, and smooth mobile transitions.
-- **Performance Overhaul:** 
-    - **Vectorized Fraud Detection:** Rule processing scaled for 50,000+ datasets using optimized Pandas operations.
-    - **Composite Indexing:** Advanced database indexing for near-instant chart filtering.
-    - **GZip Compression:** Up to 70% reduced data payloads for faster mobile browsing.
-- **Payment Channel Analytics:** Dedicated performance tracking (revenue, volume, success rates) for bKash, Nagad, Card, Rocket, etc.
-- **Unified Vercel Deployment:** Optimized for serverless architecture with a unified static dashboard and FastAPI backend.
-- **Robust Data Management:** Added "Clear All" and "Restore Sample Data" features for seamless demo resets.
-
----
-
-## Table of Contents
-
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Core Features](#features)
-- [Getting Started (Docker)](#getting-started-docker)
-- [API Documentation](#api-documentation)
-- [Fraud Detection Rules](#fraud-detection-rules)
-- [Performance Benchmarks](#performance-benchmarks)
-- [Deployment Guide](#deployment-guide)
+## 📌 Table of Contents
+- [✨ About The Project](#-about-the-project)
+- [🧠 Intelligence Engines](#-intelligence-engines)
+- [🛠 Tech Stack](#-tech-stack)
+- [📂 Project Structure](#-project-structure)
+- [🚀 Getting Started](#-getting-started)
+- [🎨 Style Guide](#-style-guide)
+- [🛡 Security & Integrity](#-security--integrity)
+- [📚 Extended Documentation](#-extended-documentation)
+- [📈 Roadmap](#-roadmap)
+- [📖 API Documentation](#-api-documentation)
 
 ---
 
-## Architecture
+## ✨ About The Project
+The **Fintech Transaction Pipeline** is a robust ETL (Extract, Transform, Load) engine built to handle the complexities of mobile financial transactions. In the MFS ecosystem, data arrives in massive batches and requires instant cleaning, standardization, and risk assessment.
 
-```
-                ┌─────────────────┐
-   CSV file ──▶ │                 │
-                │   ETL Pipeline  │
-   JSON API ──▶ │  extract.py     │
-                │  transform.py   │──▶ PostgreSQL ──▶ FastAPI ──▶ Modern Web
-                │  fraud_detect.py│        ▲              │         Dashboard
-                │  load.py        │        │              │       (Tailwind,
-                └─────────────────┘        │              │       Plotly.js)
-                                            │              ▼
-                                     Indexed tables:   Swagger /docs
-                                  users, merchants,
-                                     transactions
-```
+**Key Highlights:**
+*   **Production-Grade Ingestion:** Optimized for 50,000+ row CSV batch uploads.
+*   **Vectorized ETL:** Leverages NumPy/Pandas for O(n) transformation performance.
+*   **Fraud Flagging:** Real-time rule-based engine to identify suspicious patterns.
+*   **MFS-Style Dashboard:** A high-fidelity analytics interface with glassmorphism design.
 
-## Tech Stack
+---
 
-| Layer            | Technology                                     |
-|-------------------|------------------------------------------------|
-| **Backend API**   | FastAPI, Pydantic, Uvicorn, GZip Middleware    |
-| **Frontend**      | Tailwind CSS, Plotly.js, Vanilla JS (ES6+)     |
-| **Data Engine**   | Pandas (Vectorized ETL)                        |
-| **ORM / SQL**     | SQLAlchemy 2.0 (Dialect Agnostic)              |
-| **Database**      | PostgreSQL 15 (Neon/Supabase), SQLite          |
-| **Infrastructure**| Docker, Docker Compose, Vercel Serverless      |
+## 🧠 Intelligence Engines
+The core of the pipeline lies in its ability to derive meaning from raw transaction logs.
 
-## Project Structure
+### 🛡 Fraud Detection Engine (FDE)
+A deterministic, rule-based engine that evaluates every transaction against three primary risk vectors:
+1.  **High-Value Outliers:** Flags transactions exceeding a configurable threshold (Default: 50,000 BDT).
+2.  **Velocity/Repeat Failures:** Identifies users with $\ge 3$ failed transactions in a single window, suggesting potential brute-force or system issues.
+3.  **Duplicate Sequence Logic:** Detects identical (User + Merchant + Amount) pairs occurring within a 5-minute "retry" window.
 
-```
+### 📊 Performance Analytics Engine
+Calculates high-level KPIs and daily trends using optimized SQL aggregates:
+*   **Success Rate (SR):** Percentage of successful vs. failed transactions.
+*   **Channel Volume:** Breakdown of volume by bKash, Nagad, Card, and Rocket.
+*   **Revenue Impact:** Real-time calculation of total processed volume.
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology | Role |
+| :--- | :--- | :--- |
+| **Backend** | FastAPI / Python 3.12 | High-concurrency API layer |
+| **Data Engine** | Pandas / NumPy | Vectorized ETL & cleaning |
+| **Database** | PostgreSQL 15 | Relational storage with composite indexing |
+| **ORM** | SQLAlchemy 2.0 | Type-safe database interactions |
+| **Frontend** | Tailwind CSS / Plotly.js | Modern dashboard & data viz |
+| **Infra** | Docker / Vercel | Containerization & Serverless delivery |
+
+---
+
+## 📂 Project Structure
+```text
 fintech_transaction_pipeline/
-│
-├── backend/
-│   └── app/
-│       ├── main.py            # Fast startup + auto-seeding logic
-│       ├── database.py        # SQLAlchemy engine (Postgres/SQLite fallback)
-│       ├── models.py          # Optimized ORM with composite indexes
-│       └── routers/           # Analytics, Ingestion, & Transactions
-│
+├── backend/app/
+│   ├── main.py            # API entry point & lifespan logic
+│   ├── models.py          # SQLAlchemy schemas with composite indexes
+│   └── routers/           # Domain-driven API modules
 ├── etl/
-│   ├── transform.py           # Standardized data cleaning
-│   ├── fraud_detection.py     # High-speed vectorized fraud rules
-│   └── load.py                # Batched load logic (5k rows/batch)
-│
-├── public/                    # Modern Dashboard (Vercel Static)
-│   ├── index.html             # Responsive Tailwind UI
-│   └── dashboard.js           # Plotly integrations + Cache-Busting
-│
-├── data/
-│   └── sample_transactions.csv     # 500+ generated, intentionally-dirty rows
-│
-├── docker-compose.yml
-├── vercel.json                # Serverless unified config
-└── requirements.txt
+│   ├── transform.py       # Vectorized data cleaning logic
+│   ├── fraud_detection.py # Rule-based flagging engine
+│   └── load.py            # Batched Postgres loader (5k/batch)
+├── public/                # Static frontend assets
+│   ├── index.html         # Tailwind-powered dashboard
+│   └── dashboard.js       # Chart logic & API integration
+├── docker/                # Deployment configurations
+└── data/                  # Sample transaction datasets
 ```
 
-## Features
+---
 
-- **High-Scale Ingestion:** Supports 50,000+ row CSV uploads with vectorized processing and batched database inserts.
-- **Smart Data Cleaning:** Automated duplicate removal, missing-value handling, and payment-method standardization.
-- **Explainable Fraud Detection:** Real-time flagging for high-value outliers, repeat failures, and duplicate pattern sequences.
-- **Interactive Analytics:** Live filtering by channel and status across all KPIs, daily trends, and merchant leaderboards.
-- **Mobile Optimized:** sliding sidebar navigation, vanishing toggles, and touch-friendly interactive charts.
-- **Idempotent Storage:** Safe to re-run pipeline on overlapping data (`ON CONFLICT DO NOTHING`).
+## 🚀 Getting Started
 
-## Getting Started (Docker)
-
-**Prerequisites:** Docker + Docker Compose installed.
-
+### 🐳 Docker (Quickest)
 ```bash
-# 1. Clone the repo
+# Clone the repository
 git clone https://github.com/utshob61/fintech_transaction_pipeline.git
 cd fintech_transaction_pipeline
 
-# 2. Start services
+# Spin up the stack
 docker compose up --build
 ```
 
-Access:
-- **Web Dashboard:** [http://localhost:8000](http://localhost:8000)
-- **API (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
+### 🐍 Local Development
+1.  **Environment:** Create a `.env` file based on `.env.example`.
+2.  **Install:** `pip install -r requirements.txt`.
+3.  **Run:** `uvicorn backend.app.main:app --reload --port 8000`.
 
-## API Documentation
+---
 
-Interactive Swagger docs are auto-generated at **`/docs`**.
+## 🎨 Style Guide
+The project adheres to a "Modern Fintech" aesthetic, prioritizing clarity and data density.
 
-| Method | Endpoint                          | Description                          |
-|--------|------------------------------------|---------------------------------------|
-| POST   | `/api/upload/csv`                  | Upload a transactions CSV file        |
-| POST   | `/api/upload/json`                 | Ingest transactions as a JSON list    |
-| DELETE | `/api/upload/clear`                | Wipe all data from the database       |
-| GET    | `/api/analytics/summary`           | KPIs + daily revenue summary          |
-| GET    | `/api/analytics/channel-performance` | Breakdown by payment method        |
-| GET    | `/api/transactions/suspicious`     | Flagged suspicious transactions       |
+*   **Typography:** Inter (Primary), JetBrains Mono (Data/Numbers).
+*   **Design Tokens:**
+    *   **Success Green:** `#10b981`
+    *   **Failure Red:** `#ef4444`
+    *   **MFS Branding:** Custom color accents for bKash (Pink) and Nagad (Orange).
+*   **Visual Philosophy:** Glassmorphism cards, persistent sidebars, and responsive toggles.
 
-## Fraud Detection Rules
+---
 
-1. **High amount:** `amount > 50,000` (Configurable threshold).
-2. **Repeat failures:** Users with `>= 3` failed transactions within the period.
-3. **Duplicate attempts:** Same user + merchant + amount within a 5-minute window.
+## 🛡 Security & Integrity
+*   **Idempotent Loading:** Uses `ON CONFLICT DO NOTHING` to ensure overlapping data batches don't create duplicates.
+*   **Data Isolation:** Strict typing via Pydantic ensures only valid transaction schemas enter the pipeline.
+*   **GZip Compression:** All API responses are compressed to minimize data transit costs and improve load times.
 
-## Deployment Guide
+---
 
-### Vercel (Unified Deployment)
-The project is optimized for Vercel Serverless.
+## 📚 Extended Documentation
+For a deeper dive into the architecture and engines:
+*   [Architecture Deep Dive](./docs/ARCHITECTURE.md)
+*   [Fraud Engine Logic](./docs/FRAUD_ENGINE.md)
+*   [API Reference](./docs/API_REFERENCE.md)
 
-1. Connect repo to Vercel.
-2. Add `DATABASE_URL` (Neon/Supabase) to Environment Variables for persistence.
-3. Deploy!
+---
 
-> **Note:** If no `DATABASE_URL` is provided, the app uses an in-memory SQLite database that auto-seeds with sample data on cold start.
+## 📈 Roadmap
+- [ ] ML-based anomaly detection (Isolation Forest).
+- [ ] Real-time WebSocket updates for the dashboard.
+- [ ] Exportable PDF/Excel merchant reports.
+- [ ] Multi-tenant isolation for different merchants.
 
-## Performance Benchmarks
-- **Ingestion:** 50,000 transactions processed and indexed in < 5 seconds.
-- **Analytics:** Complex aggregates calculated in < 100ms via optimized composite indexes.
-- **Payload:** GZip compressed responses ensure < 50KB transfer for large table data.
+---
+
+## 📖 API Documentation
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/upload/csv` | Bulk ingest transactions from CSV |
+| `DELETE` | `/api/upload/clear` | Purge all transaction data (Demo use) |
+| `GET` | `/api/analytics/summary` | Fetch top-level KPIs and trends |
+| `GET` | `/api/analytics/channel` | Payment channel performance breakdown |
+| `GET` | `/api/transactions/suspicious` | List all flagged fraudulent transactions |
+
+---
+
+**Proudly built for the Bangladesh Fintech Ecosystem.**
