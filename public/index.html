@@ -214,6 +214,23 @@
       </div>
     </section>
 
+    <section class="bg-card/20 rounded-2xl p-6 border border-accent/20 mt-8">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h3 class="section-title mb-1">🤖 Analytics Assistant</h3>
+          <p class="text-xs text-slate-500">Ask about revenue, failures, channels, or suspicious activity.</p>
+        </div>
+        <span id="chat-mode" class="text-[10px] uppercase tracking-widest text-slate-500">Ready</span>
+      </div>
+      <div id="chat-messages" class="space-y-3 max-h-64 overflow-y-auto mb-4 pr-1" aria-live="polite">
+        <div class="rounded-xl bg-white/5 p-3 text-sm text-slate-300">Hi! Ask me to summarize the current transaction data.</div>
+      </div>
+      <form id="chat-form" class="flex gap-3">
+        <input id="chat-input" required maxlength="1500" placeholder="e.g. What should I investigate first?" class="min-w-0 flex-1 rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-sm outline-none focus:border-accent" />
+        <button class="rounded-xl bg-accent px-5 py-3 text-sm font-bold text-slate-950 hover:bg-sky-300">Ask</button>
+      </form>
+    </section>
+
     <footer class="mt-12 text-center text-slate-700 text-[10px] uppercase tracking-widest font-bold">
       &copy; 2026 Fintech Transaction Pipeline • Unified Static Dashboard
     </footer>

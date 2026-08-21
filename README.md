@@ -99,6 +99,7 @@ docker compose up --build
 1.  **Environment:** Create a `.env` file based on `.env.example`.
 2.  **Install:** `pip install -r requirements.txt`.
 3.  **Run:** `uvicorn backend.app.main:app --reload --port 8000`.
+4.  **Optional AI:** Set `OPENAI_API_KEY` before starting to enable the OpenAI-powered dashboard assistant. Without it, the assistant provides local aggregate insights.
 
 ---
 

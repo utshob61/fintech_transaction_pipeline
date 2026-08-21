@@ -9,6 +9,47 @@ const uploadResult = document.getElementById('upload-result');
 const uploadOverlay = document.getElementById('upload-overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const loadingOverlay = document.getElementById('loading-overlay');
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatMessages = document.getElementById('chat-messages');
+const chatMode = document.getElementById('chat-mode');
+
+function addChatMessage(message, role) {
+  const bubble = document.createElement('div');
+  bubble.className = role === 'user'
+    ? 'rounded-xl bg-accent/15 border border-accent/20 p-3 text-sm text-slate-100 ml-8'
+    : 'rounded-xl bg-white/5 p-3 text-sm text-slate-300 mr-8';
+  bubble.textContent = message;
+  chatMessages.appendChild(bubble);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+chatForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const message = chatInput.value.trim();
+  if (!message) return;
+  addChatMessage(message, 'user');
+  chatInput.value = '';
+  chatInput.disabled = true;
+  chatMode.textContent = 'Thinking…';
+  try {
+    const response = await fetch(`${apiBase}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    });
+    if (!response.ok) throw new Error('Assistant is unavailable');
+    const result = await response.json();
+    addChatMessage(result.reply, 'assistant');
+    chatMode.textContent = result.mode === 'openai' ? 'AI connected' : 'Local insights';
+  } catch (error) {
+    addChatMessage('I could not reach the assistant. Please try again.', 'assistant');
+    chatMode.textContent = 'Unavailable';
+  } finally {
+    chatInput.disabled = false;
+    chatInput.focus();
+  }
+});
 
 // Shared Plotly Layout
 const PLOTLY_LAYOUT = {

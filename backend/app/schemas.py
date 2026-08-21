@@ -93,3 +93,14 @@ class ChannelPerformance(BaseModel):
     transaction_count: int
     failed_count: int
     success_rate: float
+
+
+# ---------- Assistant ----------
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=1_500)
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    mode: str

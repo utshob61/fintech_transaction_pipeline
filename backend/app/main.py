@@ -5,14 +5,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from sqlalchemy import create_engine as _create_engine, text
-from fastapi.responses import Response
+from sqlalchemy import text
+from fastapi.responses import FileResponse, Response
 
 from app.database import Base, engine
 from app.logging_config import setup_logging
 from app.models import *
 from app.schemas import *
-from app.routers import analytics, transactions, upload
+from app.routers import analytics, chat, transactions, upload
 
 # Import init_database from the root database package
 from database.init_db import init_database
@@ -85,11 +85,14 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(upload.router)
 app.include_router(transactions.router)
 app.include_router(analytics.router)
+app.include_router(chat.router)
 
 
 @app.get("/", tags=["Health"])
 async def health_check():
-    return {
-        "status": "ok",
-        "service": "fintech-transaction-analytics-api"
-    }
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "public", "index.html"))
+
+
+@app.get("/dashboard.js", include_in_schema=False)
+async def dashboard_script():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "..", "public", "dashboard.js"))
