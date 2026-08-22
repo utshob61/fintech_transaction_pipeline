@@ -13,6 +13,22 @@ const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatMessages = document.getElementById('chat-messages');
 const chatMode = document.getElementById('chat-mode');
+const chatPanel = document.getElementById('chat-panel');
+const chatToggle = document.getElementById('chat-toggle');
+const chatClose = document.getElementById('chat-close');
+
+function setChatOpen(isOpen) {
+  chatPanel.classList.toggle('hidden', !isOpen);
+  chatToggle.classList.toggle('hidden', isOpen);
+  chatToggle.setAttribute('aria-expanded', String(isOpen));
+  if (isOpen) chatInput.focus();
+}
+
+chatToggle.addEventListener('click', () => setChatOpen(true));
+chatClose.addEventListener('click', () => setChatOpen(false));
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !chatPanel.classList.contains('hidden')) setChatOpen(false);
+});
 
 function addChatMessage(message, role) {
   const bubble = document.createElement('div');

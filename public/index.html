@@ -214,13 +214,16 @@
       </div>
     </section>
 
-    <section class="bg-card/20 rounded-2xl p-6 border border-accent/20 mt-8">
+    <section id="chat-panel" class="fixed bottom-6 right-6 z-50 hidden w-[calc(100%-2rem)] max-w-lg bg-card/95 backdrop-blur-xl rounded-2xl p-5 border border-accent/30 shadow-2xl shadow-black/50">
       <div class="flex items-center justify-between gap-4 mb-4">
         <div>
           <h3 class="section-title mb-1">🤖 Analytics Assistant</h3>
           <p class="text-xs text-slate-500">Ask about revenue, failures, channels, or suspicious activity.</p>
         </div>
-        <span id="chat-mode" class="text-[10px] uppercase tracking-widest text-slate-500">Ready</span>
+        <div class="flex items-center gap-3">
+          <span id="chat-mode" class="text-[10px] uppercase tracking-widest text-slate-500">Ready</span>
+          <button id="chat-close" type="button" aria-label="Close assistant" class="text-slate-500 hover:text-white text-xl leading-none">×</button>
+        </div>
       </div>
       <div id="chat-messages" class="space-y-3 max-h-64 overflow-y-auto mb-4 pr-1" aria-live="polite">
         <div class="rounded-xl bg-white/5 p-3 text-sm text-slate-300">Hi! Ask me to summarize the current transaction data.</div>
@@ -230,6 +233,11 @@
         <button class="rounded-xl bg-accent px-5 py-3 text-sm font-bold text-slate-950 hover:bg-sky-300">Ask</button>
       </form>
     </section>
+
+    <button id="chat-toggle" type="button" aria-expanded="false" aria-controls="chat-panel"
+      class="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-extrabold text-slate-950 shadow-xl shadow-sky-950/40 hover:bg-sky-300 focus:outline-none focus:ring-2 focus:ring-white">
+      <span class="text-lg">🤖</span><span>Ask AI</span>
+    </button>
 
     <footer class="mt-12 text-center text-slate-700 text-[10px] uppercase tracking-widest font-bold">
       &copy; 2026 Fintech Transaction Pipeline • Unified Static Dashboard
